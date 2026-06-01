@@ -2,10 +2,10 @@ import threading
 import sys
 import os
 import shared_dicts
-from announcer import start_announcer
-from discovery import start_discovery, start_content_wiper
-from uploader import start_uploader
-from downloader import start_downloader_ui
+from chunk_announcer import start_announcer
+from content_discovery import start_discovery, start_content_wiper
+from chunk_uploader import start_uploader
+from chunk_downloader import start_downloader_ui
 
 if __name__ == "__main__":
     print("==================================================")
