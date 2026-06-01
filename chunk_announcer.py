@@ -1,35 +1,35 @@
 import socket
 import time
 import json
+import os
 
-def start_announcer(username, chunk_list):
-    
+def start_announcer(username, chunk_dir):
     announcer_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     announcer_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
     broadcast_address = ("192.168.1.255", 6000)
     
-    print(f"[ANNOUNCER] {username} için UDP Anons servisi başlatildi (Port: 6000)...")
+    print(f"[ANNOUNCER] {username} icin UDP Anons servisi baslatildi (Port: 6000)...")
     
     while True:
         try:
-
+            current_chunks = os.listdir(chunk_dir) if os.path.exists(chunk_dir) else []
+            
             payload = {
                 "username": username,
-                "chunks": chunk_list
+                "chunks": current_chunks
             }
             
             json_message = json.dumps(payload)
-            
             message_bytes = json_message.encode('utf-8')
             
             announcer_socket.sendto(message_bytes, broadcast_address)
             
-            print(f"[ANNOUNCER - SENT] Anons gönderildi: {payload}")
+            print(f"[ANNOUNCER - SENT] Anons gonderildi: {payload}")
             
         except Exception as e:
-            print(f"[ANNOUNCER - HATA] Anons gönderilirken hata oluştu: {e}")
+            print(f"[ANNOUNCER - HATA] Anons gonderilirken hata olustu: {e}")
             
         time.sleep(8)
 

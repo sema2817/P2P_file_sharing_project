@@ -5,16 +5,11 @@ import time
 import shared_dicts
 
 def start_discovery():
-    """
-    Arka planda sürekli UDP 6000 portunu dinler.
-    Gelen anonslari çözerek ortak sözlükleri günceller.
-    Req 2.2.0-A, B, C, D, E, F gereksinimlerini karşilar.
-    """
     discovery_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     discovery_socket.bind(('', 6000))
     
-    print("[DISCOVERY] UDP Keşif servisi başlatildi, ağ dinleniyor (Port: 6000)...")
+    print("[DISCOVERY] UDP Kesif servisi baslatildi, ag dinleniyor (Port: 6000)...")
     
     while True:
         try:
@@ -22,41 +17,38 @@ def start_discovery():
             sender_ip = addr[0]  
             
             json_message = data.decode('utf-8')
-            
             payload = json.loads(json_message)
             
-
             username = payload.get("username")
             chunks = payload.get("chunks", [])
             
             with shared_dicts.dict_lock:
                 shared_dicts.ip_to_username[sender_ip] = username
-                shared_dicts.username_to_ip[username] = sender_ip
                 
+                shared_dicts.username_to_ip[username] = sender_ip
+
                 for chunk in chunks:
                     if chunk not in shared_dicts.content_dict:
                         shared_dicts.content_dict[chunk] = []
                     
-                    if sender_ip not in shared_dicts.content_dict[chunk]:
-                        shared_dicts.content_dict[chunk].append(sender_ip)
-                        
+                    if username not in shared_dicts.content_dict[chunk]:
+                        shared_dicts.content_dict[chunk].append(username)
+
+            chunks_str = ", ".join(chunks)
+            print(f"[DISCOVERY - ONLINE] {username} : {chunks_str}")
             print(f"[DISCOVERY - RECEIVED] {username} ({sender_ip}) cihazindan anons alindi.")
             
         except Exception as e:
-            print(f"[DISCOVERY - HATA] Paket alinirken veya işlenirken hata: {e}")
+            print(f"[DISCOVERY - HATA] Paket alinirken veya islenirken hata: {e}")
 
 def start_content_wiper():
-    """
-    Req 2.2.0-G: İçerik sözlüğünü (Content Dictionary) her 60 saniyede bir
-    tamamen temizler (wipe off). Böylece ağdan düşen kullanicilar listeden silinir.
-    """
-    print("[WIPER] İçerik temizleme (Wiper) servisi aktif edildi.")
+    print("[WIPER] Icerik temizleme (Wiper) servisi aktif edildi.")
     while True:
         time.sleep(60)
         
         with shared_dicts.dict_lock:
             shared_dicts.content_dict.clear()
-            print("[WIPER - REFRESH] İçerik sözlüğü (Content Dictionary) temizlendi. Yeni anonslar bekleniyor...")
+            print("[WIPER - REFRESH] Icerik sozlucu (Content Dictionary) temizlendi. Yeni anonslar bekleniyor...")
 
 """
 import socket

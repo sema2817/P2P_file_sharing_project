@@ -1,5 +1,6 @@
 import threading
 import sys
+import os
 import shared_dicts
 from announcer import start_announcer
 from discovery import start_discovery, start_content_wiper
@@ -18,12 +19,16 @@ if __name__ == "__main__":
         
     owned_file = input("Ağa sunmak istediğiniz başlangiç dosya adini girin (Örn: forest): ").strip()
     
-    my_chunks = [f"{owned_file}_1", f"{owned_file}_2", f"{owned_file}_3"]
+    CHUNK_DIR = "my_chunks"
+    if not os.path.exists(CHUNK_DIR):
+        os.makedirs(CHUNK_DIR)
     
-    print(f"\n[SİSTEM] Profil oluşturuldu. Sahip olduğunuz parçalar: {my_chunks}")
+    print(f"\n[SİSTEM] Profil oluşturuldu. Başlangıç içeriği: '{owned_file}'")
+    print(f"[SİSTEM] Parçalar '{CHUNK_DIR}' klasöründen dinamik taranacak (Req. 2.1.0-C).")
     print("[SİSTEM] Arka plan servisleri ateşleniyor...\n")
     
-    announcer_thread = threading.Thread(target=start_announcer, args=(username, my_chunks), daemon=True)
+    announcer_thread = threading.Thread(target=start_announcer, args=(username, CHUNK_DIR), daemon=True)
+    
     discovery_thread = threading.Thread(target=start_discovery, daemon=True)
     wiper_thread = threading.Thread(target=start_content_wiper, daemon=True)
     uploader_thread = threading.Thread(target=start_uploader, daemon=True)
