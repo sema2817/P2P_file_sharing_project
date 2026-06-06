@@ -1,24 +1,66 @@
+import json
+import os
 import threading
-ip_to_username = {}
-username_to_ip = {}
-content_dict = {}
-dict_lock = threading.Lock()
 
-"""
-merkezi veri havuzu, tum bagimsiz parcalar bu hafiza alanini ortaklasa kullanir
-kod agdaki diger bs leri gorur ve kimden hangin dosani alacagini bilir
-    import threading
-birden fazla isi ypamasini saglayan kutup   
-    ip_to_username = {}
-bos py sozlugu
-    username_to_ip = {}
-Mehmet'in ağdaki fiziksel adresini (IP'sini) bulup ona TCP bağlantisi açabilmesi için bu sözlüğü kullanir
-    content_dict = {}
-hangi dosya parcasinin(chunk) kimlerde old gosteren icerik haritasi
-        Ayrica start_content_wiper fonksiyonu her 60 saniyede bir tam olarak bu sözlüğü sifirlar (.clear()).
-    dict_lock = threading.Lock()
-Arka planda çalisan discovery.py (Keşifçi) tam ağdan yeni bir paket alip yukardaki sözlüklere Mehmet'in bilgilerini yazmaya çalisirken (ayni milisaniyede), sen de menüden 1'e basip o sözlükleri ekrana listelemeye çalisirsan ya da wiper servisi o sözlüğü silmeye kalkarsa Python "Race Condition" (Yariş Durumu) hatasi verir ve program çöker. Çünkü birden fazla thread ayni hafiza kutusuna ayni anda dokunamaz.
+file_lock = threading.Lock()
 
-Nasil Çözer? (Çözüm): threading.Lock() ifadesi yazilimsal bir asma kilit üretir
-Keşifçi sözlüğe veri yazarken bu kilidi kapatir (kapiyi arkadan kilitler). O sirada menü veya wiper sözlüğe erişmek isterse kilitli kapiyii görür ve keşifçinin işinin bitmesini güvenli bir şekilde sirada bekler. Keşifçinin işi bitince kilit otomatik açilir ve siradaki thread içeri girer. Programin asla donmamasini ve çökmemesini sağlayan şey tam olarak bu kilittir
-"""
+IP_TO_USER_FILE = "ip_to_username.json"
+USER_TO_IP_FILE = "username_to_ip.json"
+CONTENT_DICT_FILE = "content_dict.json"
+
+def _load_file(filename):
+    if not os.path.exists(filename):
+        return {}
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+def _save_file(filename, data):
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except IOError as e:
+        pass 
+
+
+def update_ip_to_username(ip, username):
+    with file_lock:
+        data = _load_file(IP_TO_USER_FILE)
+        data[ip] = username
+        _save_file(IP_TO_USER_FILE, data)
+
+def get_username_by_ip(ip):
+    with file_lock:
+        data = _load_file(IP_TO_USER_FILE)
+        return data.get(ip, ip)
+
+def update_username_to_ip(username, ip):
+    with file_lock:
+        data = _load_file(USER_TO_IP_FILE)
+        data[username] = ip
+        _save_file(USER_TO_IP_FILE, data)
+
+def get_ip_by_username(username):
+    with file_lock:
+        data = _load_file(USER_TO_IP_FILE)
+        return data.get(username, None)
+
+def update_content_dict(chunks, username):
+    with file_lock:
+        data = _load_file(CONTENT_DICT_FILE)
+        for chunk in chunks:
+            if chunk not in data:
+                data[chunk] = []
+            if username not in data[chunk]:
+                data[chunk].append(username)
+        _save_file(CONTENT_DICT_FILE, data)
+
+def get_content_dict():
+    with file_lock:
+        return _load_file(CONTENT_DICT_FILE)
+
+def clear_content_dict():
+    with file_lock:
+        _save_file(CONTENT_DICT_FILE, {})
