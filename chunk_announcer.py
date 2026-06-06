@@ -6,7 +6,7 @@ import os
 
 ANNOUNCE_INTERVAL = 8  
 
-BROADCAST_IP = ' 192.168.1.255.' 
+BROADCAST_IP = '192.168.1.255' 
 
 def start_announcer(username, chunk_dir):
     announce_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
